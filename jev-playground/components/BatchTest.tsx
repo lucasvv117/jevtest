@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { callJev, runPool } from '@/lib/client';
 import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions } from '@/lib/types';
+import type { ShowToast } from './Toasts';
 
 const MAX_ROWS = 300;
 const CONCURRENCY = 4;
@@ -31,9 +32,11 @@ function csvCell(v: unknown) {
 export function BatchTest({
   questions,
   disabledReason,
+  onSuccess,
 }: {
   questions: Questions;
   disabledReason: string | null;
+  onSuccess: ShowToast;
 }) {
   const choiceIds = Object.keys(questions).filter((k) => questions[k].type === 'choice');
   const [input, setInput] = useState('');
@@ -51,9 +54,9 @@ export function BatchTest({
   const blocked =
     disabledReason ??
     (parsed.length === 0
-      ? 'Collez au moins une ligne.'
+      ? 'Paste at least one line.'
       : tooMany
-        ? `Maximum ${MAX_ROWS} lignes par lot (${parsed.length} collées).`
+        ? `At most ${MAX_ROWS} lines per batch (${parsed.length} pasted).`
         : null);
 
   async function run() {
@@ -63,6 +66,7 @@ export function BatchTest({
     setRunning(true);
     abort.current = new AbortController();
     const signal = abort.current.signal;
+    let succeeded = 0;
     await runPool(
       initial,
       CONCURRENCY,
@@ -70,6 +74,7 @@ export function BatchTest({
         try {
           const res = await callJev(row.text, questions, signal);
           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, res } : r)));
+          succeeded++;
         } catch (e) {
           if (signal.aborted) return;
           const error = e instanceof Error ? e.message : String(e);
@@ -80,6 +85,10 @@ export function BatchTest({
       signal,
     );
     setRunning(false);
+    // One toast per batch rather than one per row.
+    if (succeeded > 0) {
+      onSuccess('TypeSafe API calls succeeded', `${succeeded} of ${initial.length} rows classified`);
+    }
   }
 
   const stats = useMemo(() => {
@@ -105,7 +114,7 @@ export function BatchTest({
 
   function exportCsv() {
     const qids = Object.keys(questions);
-    const header = ['texte', 'attendu', ...qids.flatMap((q) => [q, `${q}_p`, `${q}_confiance`]), 'latence_ms', 'erreur'];
+    const header = ['text', 'expected', ...qids.flatMap((q) => [q, `${q}_p`, `${q}_confidence`]), 'latency_ms', 'error'];
     const lines = rows.map((r) => {
       const cells: unknown[] = [r.text, r.expected];
       for (const q of qids) {
@@ -122,37 +131,37 @@ export function BatchTest({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `jev-lot-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`;
+    a.download = `jev-batch-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  const fmt = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)} %`);
+  const fmt = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
 
   return (
     <div className="batch">
       <label className="field">
-        <span className="field-label">Lignes à classer</span>
+        <span className="field-label">Lines to classify</span>
         <span className="field-hint">
-          Une ligne par texte. Pour mesurer la précision, collez deux colonnes depuis un tableur : texte, puis
-          libellé attendu (séparés par une tabulation).
+          One line per text. To measure accuracy, paste two columns from a spreadsheet: the text, then the
+          expected label (separated by a tab).
         </span>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           rows={8}
-          placeholder={'Texte 1\tdecision\nTexte 2\tcourrier'}
+          placeholder={'Text 1\tdecision\nText 2\tletter'}
         />
       </label>
 
       <div className="batch-controls">
         <label className="check">
           <input type="checkbox" checked={hasHeader} onChange={(e) => setHasHeader(e.target.checked)} />
-          Ignorer la première ligne (en-têtes)
+          Skip the first line (headers)
         </label>
         {choiceIds.length > 0 && (
           <label className="inline">
-            Comparer le libellé attendu à
+            Compare the expected label with
             <select value={ref} onChange={(e) => setRefId(e.target.value)}>
               {choiceIds.map((id) => (
                 <option key={id}>{id}</option>
@@ -165,16 +174,16 @@ export function BatchTest({
       <div className="actions">
         {running ? (
           <button type="button" onClick={() => abort.current?.abort()}>
-            Arrêter ({done}/{rows.length})
+            Stop ({done}/{rows.length})
           </button>
         ) : (
           <button type="button" className="primary" onClick={run} disabled={!!blocked}>
-            Évaluer {parsed.length > 0 ? `${parsed.length} ligne${parsed.length > 1 ? 's' : ''}` : 'le lot'}
+            Run {parsed.length > 0 ? `${parsed.length} line${parsed.length > 1 ? 's' : ''}` : 'batch'}
           </button>
         )}
         {rows.length > 0 && !running && (
           <button type="button" onClick={exportCsv}>
-            Exporter en CSV
+            Export CSV
           </button>
         )}
         <span className="muted small">{blocked}</span>
@@ -185,30 +194,30 @@ export function BatchTest({
           <div className="stats">
             <div className="stat">
               <span className="stat-value">{fmt(stats.accuracy)}</span>
-              <span className="stat-label">précision sur {ref || '–'} ({stats.labeled} lignes annotées)</span>
+              <span className="stat-label">accuracy on {ref || '–'} ({stats.labeled} labeled lines)</span>
             </div>
             <div className="stat">
               <span className="stat-value">{fmt(stats.coverage)}</span>
-              <span className="stat-label">classées automatiquement au seuil {threshold.toFixed(2)}</span>
+              <span className="stat-label">auto-classified at threshold {threshold.toFixed(2)}</span>
             </div>
             <div className="stat">
               <span className="stat-value">{fmt(stats.autoAccuracy)}</span>
-              <span className="stat-label">précision sur ces lignes-là</span>
+              <span className="stat-label">accuracy on those lines</span>
             </div>
             <div className="stat">
               <span className="stat-value">{stats.p50 ?? '–'} ms</span>
-              <span className="stat-label">latence médiane (p95 : {stats.p95 ?? '–'} ms)</span>
+              <span className="stat-label">median latency (p95: {stats.p95 ?? '–'} ms)</span>
             </div>
             <div className="stat">
               <span className="stat-value">{stats.cost < 0.0001 ? "< 0.0001" : stats.cost.toFixed(4)} $</span>
               <span className="stat-label">
-                coût du lot ({stats.ok} OK{stats.errors ? `, ${stats.errors} en erreur` : ''})
+                batch cost ({stats.ok} OK{stats.errors ? `, ${stats.errors} failed` : ''})
               </span>
             </div>
           </div>
 
           <label className="threshold">
-            Seuil de probabilité pour classer sans revue humaine : <strong>{threshold.toFixed(2)}</strong>
+            Probability threshold to classify without human review: <strong>{threshold.toFixed(2)}</strong>
             <input
               type="range"
               min={0.3}
@@ -224,27 +233,27 @@ export function BatchTest({
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Texte</th>
+                  <th>Text</th>
                   {ref && <th>{ref}</th>}
                   <th>p</th>
-                  <th>Attendu</th>
-                  <th>Résultat</th>
+                  <th>Expected</th>
+                  <th>Result</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => {
                   const t = topOf(r.res, ref);
                   const status = r.error
-                    ? { cls: 'bad', label: 'Erreur' }
+                    ? { cls: 'bad', label: 'Error' }
                     : !r.res
-                      ? { cls: 'pending', label: running ? '…' : 'Non traité' }
+                      ? { cls: 'pending', label: running ? '…' : 'Not run' }
                       : t && t.p < threshold
-                        ? { cls: 'warn', label: 'À revoir' }
+                        ? { cls: 'warn', label: 'Review' }
                         : !r.expected
                           ? { cls: '', label: '' }
                           : t?.choice === r.expected
                             ? { cls: 'good', label: 'Correct' }
-                            : { cls: 'bad', label: 'Faux' };
+                            : { cls: 'bad', label: 'Wrong' };
                   return (
                     <tr key={i}>
                       <td className="num">{i + 1}</td>

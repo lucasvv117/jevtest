@@ -4,15 +4,18 @@ import { useState } from 'react';
 import { AnswerView } from './AnswerView';
 import { callJev } from '@/lib/client';
 import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions } from '@/lib/types';
+import type { ShowToast } from './Toasts';
 
 export function SingleTest({
   questions,
   examples,
   disabledReason,
+  onSuccess,
 }: {
   questions: Questions;
   examples: string[];
   disabledReason: string | null;
+  onSuccess: ShowToast;
 }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +26,12 @@ export function SingleTest({
     setLoading(true);
     setError(null);
     try {
-      setResult(await callJev(text, questions));
+      const res = await callJev(text, questions);
+      setResult(res);
+      onSuccess(
+        'TypeSafe API call succeeded',
+        `${Object.keys(res.answers).length} answers · ${res.latencyMs} ms · ${res.usage.inputTokens ?? '?'} input tokens`,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setResult(null);
@@ -32,12 +40,12 @@ export function SingleTest({
     }
   }
 
-  const blocked = disabledReason ?? (!text.trim() ? 'Saisissez un texte à classer.' : null);
+  const blocked = disabledReason ?? (!text.trim() ? 'Enter a text to classify.' : null);
 
   return (
     <div className="single">
       <label className="field">
-        <span className="field-label">Texte à classer</span>
+        <span className="field-label">Text to classify</span>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -45,13 +53,13 @@ export function SingleTest({
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !blocked && !loading) run();
           }}
           rows={9}
-          placeholder="Collez un extrait de décision, un courrier, une requête utilisateur…"
+          placeholder="Paste a court decision excerpt, a letter, a user query…"
         />
       </label>
 
       {examples.length > 0 && (
         <div className="examples">
-          <span className="muted">Exemples :</span>
+          <span className="muted">Examples:</span>
           {examples.map((ex, i) => (
             <button key={i} type="button" className="chip" onClick={() => setText(ex)} title={ex}>
               {ex.slice(0, 48)}…
@@ -62,9 +70,9 @@ export function SingleTest({
 
       <div className="actions">
         <button type="button" className="primary" onClick={run} disabled={!!blocked || loading}>
-          {loading ? 'Évaluation…' : 'Évaluer'}
+          {loading ? 'Running…' : 'Run'}
         </button>
-        <span className="muted small">{blocked ?? 'Ctrl/⌘ + Entrée'}</span>
+        <span className="muted small">{blocked ?? 'Ctrl/⌘ + Enter'}</span>
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
@@ -72,7 +80,7 @@ export function SingleTest({
       {result && (
         <div className="results" aria-live="polite">
           <p className="meta">
-            {result.latencyMs} ms · {result.usage.inputTokens ?? '?'} tokens d’entrée ·{' '}
+            {result.latencyMs} ms · {result.usage.inputTokens ?? '?'} input tokens ·{' '}
             {(((result.usage.inputTokens ?? 0) / 1e6) * PRICE_PER_MILLION_INPUT).toFixed(6)} $
           </p>
           {Object.entries(result.answers).map(([id, answer]) => (
@@ -85,7 +93,7 @@ export function SingleTest({
             />
           ))}
           <details className="raw">
-            <summary>Réponse brute</summary>
+            <summary>Raw response</summary>
             <pre>{JSON.stringify(result, null, 2)}</pre>
           </details>
         </div>

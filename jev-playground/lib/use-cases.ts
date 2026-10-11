@@ -19,40 +19,40 @@ import type { UseCase } from './types';
 export const USE_CASES: UseCase[] = [
   {
     id: 'classification-documents',
-    name: 'Classification de documents juridiques',
-    description: 'Type de document, matière, présence d’un délai.',
+    name: 'Legal document classification',
+    description: 'Document type, area of law, whether a deadline is mentioned.',
     questions: {
-      typeDocument: {
+      documentType: {
         type: 'choice',
-        instructions: 'Quel est le type de ce document juridique ?',
+        instructions: 'What type of legal document is this?',
         criteria: {
-          decision: 'Décision de justice : jugement, arrêt, ordonnance',
-          ecritures: 'Écritures d’avocat : conclusions, assignation, requête, mémoire',
-          contrat: 'Contrat, avenant, conditions générales, statuts',
-          courrier: 'Courrier, e-mail, mise en demeure, lettre de licenciement',
-          consultation: 'Note, consultation ou analyse juridique',
-          autre: 'Document qui n’entre dans aucune autre catégorie',
+          courtDecision: 'Court decision: judgment, appellate ruling, order',
+          pleading: 'Lawyer filing: submissions, summons, motion, brief',
+          contract: 'Contract, amendment, terms and conditions, articles of association',
+          letter: 'Letter, email, formal notice, dismissal letter',
+          memo: 'Legal memo, opinion or analysis',
+          other: 'Document that fits no other category',
         },
       },
-      matiere: {
+      areaOfLaw: {
         type: 'choice',
-        instructions: 'Quelle est la matière juridique principale ?',
+        instructions: 'What is the main area of law?',
         criteria: {
-          civil: 'Droit civil : obligations, famille, immobilier, responsabilité',
-          commercial: 'Droit commercial et des affaires : sociétés, baux commerciaux, procédures collectives',
-          social: 'Droit du travail et de la sécurité sociale',
-          penal: 'Droit pénal et procédure pénale',
-          administratif: 'Droit public et administratif, urbanisme',
-          fiscal: 'Droit fiscal',
-          autre: 'Autre matière, ou matière impossible à déterminer',
+          civil: 'Civil law: obligations, family, real estate, liability',
+          commercial: 'Commercial and business law: companies, commercial leases, insolvency',
+          employment: 'Employment and social security law',
+          criminal: 'Criminal law and criminal procedure',
+          administrative: 'Public and administrative law, zoning',
+          tax: 'Tax law',
+          other: 'Another area, or impossible to determine',
         },
       },
-      delai: {
+      hasDeadline: {
         type: 'boolean',
-        instructions: 'Le document mentionne-t-il un délai ou une date limite à respecter ?',
+        instructions: 'Does the document mention a deadline or time limit to meet?',
         criteria: {
-          true: 'Un délai, une date d’audience ou une date limite d’action est mentionné.',
-          false: 'Aucun délai ni date limite à respecter.',
+          true: 'A time limit, hearing date or filing deadline is mentioned.',
+          false: 'No deadline or time limit to meet.',
         },
       },
     },
@@ -64,32 +64,32 @@ export const USE_CASES: UseCase[] = [
   },
   {
     id: 'routage-requetes',
-    name: 'Routage de requêtes utilisateur',
-    description: 'Intention, complexité, besoin d’un document joint.',
+    name: 'User request routing',
+    description: 'Intent, complexity, whether an attached document is needed.',
     questions: {
-      intention: {
+      intent: {
         type: 'choice',
-        instructions: 'Que cherche à faire l’utilisateur ?',
+        instructions: 'What is the user trying to do?',
         criteria: {
-          recherche: 'Trouver de la jurisprudence, des textes ou de la doctrine',
-          redaction: 'Rédiger ou reformuler un acte, un courrier ou une clause',
-          analyse: 'Analyser, résumer ou comparer un document fourni',
-          procedure: 'Question pratique de procédure : délais, compétence, formalités',
-          horsPerimetre: 'Demande sans rapport avec le droit',
+          research: 'Find case law, statutes or legal commentary',
+          drafting: 'Draft or rephrase a deed, a letter or a clause',
+          analysis: 'Analyze, summarize or compare a provided document',
+          procedure: 'Practical procedure question: time limits, jurisdiction, formalities',
+          outOfScope: 'Request unrelated to law',
         },
       },
-      complexite: {
+      complexity: {
         type: 'score',
-        instructions: 'Quelle est la complexité juridique de la demande ?',
+        instructions: 'How legally complex is the request?',
         criteria: [
-          'Réponse factuelle simple, une seule source suffit',
-          'Plusieurs sources ou une qualification à opérer',
-          'Raisonnement en plusieurs étapes, questions de droit imbriquées',
+          'Simple factual answer, one source is enough',
+          'Several sources, or a legal characterization is needed',
+          'Multi-step reasoning, intertwined legal issues',
         ],
       },
-      documentRequis: {
+      needsDocument: {
         type: 'boolean',
-        instructions: 'La demande fait-elle référence à un document que l’utilisateur doit fournir ?',
+        instructions: 'Does the request refer to a document the user must provide?',
       },
     },
     examples: [
