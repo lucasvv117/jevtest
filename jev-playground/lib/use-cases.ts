@@ -101,9 +101,72 @@ export const USE_CASES: UseCase[] = [
   {
     id: 'agent-tool-calling',
     name: 'Agent tool calling — FRA Agent',
-    description: 'For a user request, which tools will the FRA agent call? One Yes/No question per tool.',
+    description: 'For a user request, which bundles and tools will the FRA agent use? One Yes/No question per bundle (7) and per tool (18).',
     view: 'fra-agent',
     questions: {
+      documents: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the Documents bundle (tools: load_documents, search_in_documents) to handle this user request? This bundle is for reading documents the user uploaded in this conversation.",
+        criteria: {
+          true: "The request involves a document the user uploaded (read, summarize, search inside it).",
+          false: "No uploaded document is involved.",
+        },
+      },
+      history: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the History bundle (tools: get_turn_answer) to handle this user request? This bundle is for looking back at earlier answers in the conversation.",
+        criteria: {
+          true: "The request refers back to an earlier answer in the conversation.",
+          false: "The request is self-contained.",
+        },
+      },
+      follow_up: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the FollowUp bundle (tools: propose_follow_ups) to handle this user request? This bundle is for suggesting next steps at the end of the answer.",
+        criteria: {
+          true: "The agent gives a substantive answer after which next steps can be suggested.",
+          false: "The request is a pure acknowledgement or needs no follow-up.",
+        },
+      },
+      legal_search: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the LegalSearch bundle (tools: research (delegates to the FRA Researcher sub-agent)) to handle this user request? This bundle is for searching French legal sources: legislation, case law, doctrine, tax commentary.",
+        criteria: {
+          true: "Answering needs French legal sources (statutes, case law, doctrine, tax positions).",
+          false: "No legal source is needed.",
+        },
+      },
+      synchronized_documents: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the SynchronizedDocuments bundle (tools: search_synchronized_documents) to handle this user request? This bundle is for searching the user's synchronized drives (Google Drive, SharePoint…).",
+        criteria: {
+          true: "The user wants something found in their own synchronized drives or internal documents.",
+          false: "The user's synchronized drives are not involved.",
+        },
+      },
+      knowledge_bases_and_matters: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the KB & Matters bundle (tools: search_knowledge_bases_and_matters, load_knowledge_bases_and_matters_documents) to handle this user request? This bundle is for searching or opening the user's knowledge bases and matters (case files, firm templates).",
+        criteria: {
+          true: "The request involves the user's knowledge bases, matters/case files or firm templates.",
+          false: "The user's knowledge bases and matters are not involved.",
+        },
+      },
+      drafting: {
+        type: 'boolean',
+        instructions:
+          "Will the FRA agent use the Drafting bundle (tools: draft_document (delegates to the Drafting Agent)) to handle this user request? This bundle is for writing, redrafting or editing a document.",
+        criteria: {
+          true: "The user asks to write, redraft, edit or produce a document, clause, letter or submission.",
+          false: "The user only wants information or an analysis, not a drafted document.",
+        },
+      },
       load_documents: {
         type: 'boolean',
         instructions:

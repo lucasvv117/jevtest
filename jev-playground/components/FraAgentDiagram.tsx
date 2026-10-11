@@ -81,15 +81,20 @@ const TOOL_H = 34;
 const GREEN = '#4ade80';
 const RED = '#f87171';
 
+/** Bundles = the manager's main tool groups; `id` is the matching Jev question. */
 const BUNDLES = [
-  { x: 12, name: 'Documents', cond: 'if uploaded docs' },
-  { x: 144, name: 'History', cond: 'always' },
-  { x: 276, name: 'FollowUp', cond: 'always' },
-  { x: 408, name: 'LegalSearch', cond: 'always' },
-  { x: 540, name: 'SynchronizedDocuments', cond: 'if storage_ids', fontSize: 9 },
-  { x: 672, name: 'KB & Matters', cond: 'if searchable groups' },
-  { x: 804, name: 'Drafting', cond: 'if editable doc or flag' },
+  { id: 'documents', x: 12, name: 'Documents', cond: 'if uploaded docs' },
+  { id: 'history', x: 144, name: 'History', cond: 'always' },
+  { id: 'follow_up', x: 276, name: 'FollowUp', cond: 'always' },
+  { id: 'legal_search', x: 408, name: 'LegalSearch', cond: 'always' },
+  { id: 'synchronized_documents', x: 540, name: 'SynchronizedDocuments', cond: 'if storage_ids', fontSize: 9 },
+  { id: 'knowledge_bases_and_matters', x: 672, name: 'KB & Matters', cond: 'if searchable groups' },
+  { id: 'drafting', x: 804, name: 'Drafting', cond: 'if editable doc or flag' },
 ];
+export const FRA_BUNDLE_IDS = BUNDLES.map((b) => b.id);
+const BUNDLE_W = 124;
+const BUNDLE_H = 42;
+const BUNDLE_Y = 116;
 
 export type Verdict = { used: boolean; label: string };
 
@@ -109,6 +114,19 @@ export function verdictFor(questions: Questions, answer: Answer | undefined, too
   return null;
 }
 
+/** Verdict pill anchored on the box's top-right corner, so the original layout stays untouched. */
+function Badge({ x, y, w, label, color }: { x: number; y: number; w: number; label: string; color: string }) {
+  const bw = Math.max(30, label.length * 5.4 + 10);
+  return (
+    <g>
+      <rect x={x + w - bw + 4} y={y - 8} width={bw} height={14} rx="7" fill="#13151f" stroke={color} strokeWidth="1" />
+      <text x={x + w - bw / 2 + 4} y={y + 2.5} textAnchor="middle" fill={color} fontSize="8.5" fontWeight="700">
+        {label}
+      </text>
+    </g>
+  );
+}
+
 export function FraAgentDiagram({
   questions,
   answers,
@@ -121,19 +139,25 @@ export function FraAgentDiagram({
   onThresholdChange: (t: number) => void;
 }) {
   const verdicts = Object.fromEntries(
-    TOOLS.map((t) => [t.tool, verdictFor(questions, answers?.[t.tool], t.tool, threshold)]),
+    [...FRA_BUNDLE_IDS, ...FRA_TOOL_NAMES].map((id) => [id, verdictFor(questions, answers?.[id], id, threshold)]),
   );
-  const judged = Object.values(verdicts).filter(Boolean) as Verdict[];
-  const hasScore = FRA_TOOL_NAMES.some((t) => questions[t]?.type === 'score');
+  const count = (ids: string[]) => {
+    const judged = ids.map((id) => verdicts[id]).filter(Boolean) as Verdict[];
+    return { used: judged.filter((v) => v.used).length, total: judged.length };
+  };
+  const bundles = count(FRA_BUNDLE_IDS);
+  const tools = count(FRA_TOOL_NAMES);
+  const hasScore = [...FRA_BUNDLE_IDS, ...FRA_TOOL_NAMES].some((id) => questions[id]?.type === 'score');
 
   return (
     <div className="fra-card">
       <div className="fra-card-body">
         <div className="fra-head">
           <span className="fra-title">FRA Agent</span>
-          {judged.length > 0 ? (
+          {bundles.total + tools.total > 0 ? (
             <span className="fra-summary">
-              <strong>{judged.filter((v) => v.used).length}</strong> / {judged.length} tools used according to Jev
+              According to Jev: <strong>{bundles.used}</strong> / {bundles.total} bundles ·{' '}
+              <strong>{tools.used}</strong> / {tools.total} tools used
             </span>
           ) : (
             <span className="fra-summary">Run Jev on a user request to see which tools it would call.</span>
@@ -211,18 +235,33 @@ export function FraAgentDiagram({
             variants: claude-sonnet-4-6 · mistral-medium-3-5 · gpt-5.6-luna · gpt-5.6-terra
           </text>
 
-          {/* bundles */}
-          {BUNDLES.map((b) => (
-            <g key={b.name}>
-              <rect x={b.x} y="116" width="124" height="42" rx="6" fill="#14532d33" stroke="#16a34a" strokeWidth="1.1" />
-              <text x={b.x + 62} y="133" textAnchor="middle" fill="#86efac" fontSize={b.fontSize ?? 9.5} fontWeight="600">
-                {b.name}
-              </text>
-              <text x={b.x + 62} y="149" textAnchor="middle" fill="#6b7280" fontSize="8" fontStyle="italic">
-                {b.cond}
-              </text>
-            </g>
-          ))}
+          {/* bundles, framed by Jev's verdict */}
+          {BUNDLES.map((b) => {
+            const v = verdicts[b.id];
+            const color = v ? (v.used ? GREEN : RED) : null;
+            return (
+              <g key={b.name}>
+                <title>{v ? `${b.name}: ${v.used ? 'used' : 'not used'} (${v.label})` : b.name}</title>
+                <rect
+                  x={b.x}
+                  y={BUNDLE_Y}
+                  width={BUNDLE_W}
+                  height={BUNDLE_H}
+                  rx="6"
+                  fill="#14532d33"
+                  stroke={color ?? '#16a34a'}
+                  strokeWidth={color ? 2 : 1.1}
+                />
+                <text x={b.x + 62} y="133" textAnchor="middle" fill="#86efac" fontSize={b.fontSize ?? 9.5} fontWeight="600">
+                  {b.name}
+                </text>
+                <text x={b.x + 62} y="149" textAnchor="middle" fill="#6b7280" fontSize="8" fontStyle="italic">
+                  {b.cond}
+                </text>
+                {v && color && <Badge x={b.x} y={BUNDLE_Y} w={BUNDLE_W} label={v.label} color={color} />}
+              </g>
+            );
+          })}
           <text x="866" y="226" textAnchor="middle" fill="#6b7280" fontSize="8.5" fontStyle="italic">
             delegates to the Drafting Agent ↗
           </text>
@@ -245,7 +284,6 @@ export function FraAgentDiagram({
             const v = verdicts[t.tool];
             const color = v ? (v.used ? GREEN : RED) : null;
             const cx = t.x + t.w / 2;
-            const badgeW = v ? Math.max(30, v.label.length * 5.4 + 10) : 0;
             return (
               <g key={t.tool}>
                 <title>{v ? `${t.tool}: ${v.used ? 'used' : 'not used'} (${v.label})` : t.tool}</title>
@@ -278,30 +316,7 @@ export function FraAgentDiagram({
                     </text>
                   ))
                 )}
-                {v && color && (
-                  <g>
-                    <rect
-                      x={t.x + t.w - badgeW + 4}
-                      y={t.y - 8}
-                      width={badgeW}
-                      height={14}
-                      rx="7"
-                      fill="#13151f"
-                      stroke={color}
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={t.x + t.w - badgeW / 2 + 4}
-                      y={t.y + 2.5}
-                      textAnchor="middle"
-                      fill={color}
-                      fontSize="8.5"
-                      fontWeight="700"
-                    >
-                      {v.label}
-                    </text>
-                  </g>
-                )}
+                {v && color && <Badge x={t.x} y={t.y} w={t.w} label={v.label} color={color} />}
               </g>
             );
           })}
