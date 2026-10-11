@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { AnswerView } from './AnswerView';
+import { FraAgentDiagram } from './FraAgentDiagram';
 import { callJev } from '@/lib/client';
-import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions } from '@/lib/types';
+import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions, type UseCase } from '@/lib/types';
 import type { ShowToast } from './Toasts';
 
 export function SingleTest({
@@ -11,16 +12,20 @@ export function SingleTest({
   examples,
   disabledReason,
   onSuccess,
+  view,
 }: {
   questions: Questions;
   examples: string[];
   disabledReason: string | null;
   onSuccess: ShowToast;
+  view?: UseCase['view'];
 }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<EvaluateResponse | null>(null);
+  const [threshold, setThreshold] = useState(0.5);
+  const isAgent = view === 'fra-agent';
 
   async function run() {
     setLoading(true);
@@ -40,12 +45,18 @@ export function SingleTest({
     }
   }
 
-  const blocked = disabledReason ?? (!text.trim() ? 'Enter a text to classify.' : null);
+  const blocked = disabledReason ?? (!text.trim() ? (isAgent ? 'Enter a user request.' : 'Enter a text to classify.') : null);
+
+  const answerCards =
+    result &&
+    Object.entries(result.answers).map(([id, answer]) => (
+      <AnswerView key={id} id={id} question={questions[id]} answer={answer} confidence={result.confidence[id]} />
+    ));
 
   return (
     <div className="single">
       <label className="field">
-        <span className="field-label">Text to classify</span>
+        <span className="field-label">{isAgent ? 'User request' : 'Text to classify'}</span>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -53,7 +64,11 @@ export function SingleTest({
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !blocked && !loading) run();
           }}
           rows={9}
-          placeholder="Paste a court decision excerpt, a letter, a user query…"
+          placeholder={
+            isAgent
+              ? 'Type what the user asks the FRA agent, e.g. “Quel est le délai de prescription en matière de vices cachés ?”'
+              : 'Paste a court decision excerpt, a letter, a user query…'
+          }
         />
       </label>
 
@@ -77,21 +92,29 @@ export function SingleTest({
 
       {error && <p className="error" role="alert">{error}</p>}
 
+      {isAgent && (
+        <FraAgentDiagram
+          questions={questions}
+          answers={result?.answers}
+          threshold={threshold}
+          onThresholdChange={setThreshold}
+        />
+      )}
+
       {result && (
         <div className="results" aria-live="polite">
           <p className="meta">
             {result.latencyMs} ms · {result.usage.inputTokens ?? '?'} input tokens ·{' '}
             {(((result.usage.inputTokens ?? 0) / 1e6) * PRICE_PER_MILLION_INPUT).toFixed(6)} $
           </p>
-          {Object.entries(result.answers).map(([id, answer]) => (
-            <AnswerView
-              key={id}
-              id={id}
-              question={questions[id]}
-              answer={answer}
-              confidence={result.confidence[id]}
-            />
-          ))}
+          {isAgent ? (
+            <details className="raw">
+              <summary>Per-tool probabilities</summary>
+              <div className="results">{answerCards}</div>
+            </details>
+          ) : (
+            answerCards
+          )}
           <details className="raw">
             <summary>Raw response</summary>
             <pre>{JSON.stringify(result, null, 2)}</pre>

@@ -28,6 +28,8 @@ export type UseCase = {
   questions: Questions;
   /** exemples de textes pour tester rapidement */
   examples: string[];
+  /** rendu spécifique des résultats (sinon : une carte par question) */
+  view?: 'fra-agent';
 };
 
 export type ChoiceAnswer = { type: 'choice'; choice: string; probabilities?: Record<string, number> };

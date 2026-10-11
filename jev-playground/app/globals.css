@@ -168,6 +168,18 @@ input[aria-invalid='true'], .qfield textarea[aria-invalid='true'] { border-color
 .add-type .muted { font-size: 11.5px; }
 .add-type:hover:not(:disabled) { border-color: var(--accent); border-style: solid; }
 
+/* Schéma FRA Agent : palette d'origine (agent_inventory.html), identique en thème clair et sombre */
+.fra-card { background: #1a1d27; border: 1px solid #2e3147; border-radius: 10px; color: #e2e8f0; overflow: visible; }
+.fra-card-body { padding: 1.5rem 1.2rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.fra-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.fra-title { font-size: 0.72rem; color: #6b7280; font-family: var(--mono); letter-spacing: 0.04em; }
+.fra-summary { font-size: 13px; color: #94a3b8; }
+.fra-summary strong { color: #4ade80; font-size: 15px; }
+.fra-threshold { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #94a3b8; }
+.fra-threshold strong { color: #e2e8f0; font-variant-numeric: tabular-nums; }
+.fra-threshold input { flex: 1; min-width: 160px; max-width: 320px; accent-color: #6c8ef5; }
+.raw .results { margin-top: 12px; }
+
 /* Toasts */
 .toasts { position: fixed; right: 20px; bottom: 20px; z-index: 50; display: flex; flex-direction: column; gap: 8px; }
 .toast {
