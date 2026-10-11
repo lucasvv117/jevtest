@@ -6,7 +6,7 @@ Petite app Next.js pour tester **Jev** (TypeSafe AI, `typesafe-ai/jev`) via Verc
 - **Un lot** : on colle jusqu’à 300 lignes depuis un tableur (`texte` + `libellé attendu`), on obtient précision, taux de classement auto selon un seuil, latence p50/p95, coût, et un export CSV.
 - Les cas d’usage sont dans `lib/use-cases.ts` (2 exemples fournis). Les questions sont aussi éditables à la volée dans l’interface.
 
-Les appels partent avec Zero Data Retention + No Training activés.
+Les appels partent avec No Training activé. Zero Data Retention n’est disponible qu’en plan Vercel Pro/Enterprise : pour l’activer, définir `JEV_ZERO_DATA_RETENTION=true` dans les variables d’environnement.
 
 ## Déployer
 

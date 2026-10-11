@@ -4,6 +4,7 @@ import { validateQuestions, type EvaluateResponse } from '@/lib/types';
 export const maxDuration = 30;
 
 const MODEL = process.env.JEV_MODEL ?? 'typesafe-ai/jev';
+const ZERO_DATA_RETENTION = process.env.JEV_ZERO_DATA_RETENTION === 'true';
 // ~32k tokens max pour le state côté Jev : on coupe large côté caractères.
 const MAX_STATE_CHARS = 100_000;
 
@@ -36,8 +37,12 @@ export async function POST(request: Request) {
       questions: questions as Record<string, Experimental_EvaluationQuestion>,
       maxRetries: 1,
       providerOptions: {
-        // Données juridiques : pas de rétention ni d'entraînement côté fournisseur.
-        gateway: { zeroDataRetention: true, disallowPromptTraining: true },
+        // Données juridiques : pas d'entraînement côté fournisseur.
+        // ZDR n'est dispo qu'en plan Pro/Enterprise : activer via JEV_ZERO_DATA_RETENTION=true.
+        gateway: {
+          disallowPromptTraining: true,
+          ...(ZERO_DATA_RETENTION && { zeroDataRetention: true }),
+        },
       },
     });
 
