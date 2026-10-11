@@ -36,7 +36,7 @@ export default function Page() {
     <div className="shell">
       <header className="topbar">
         <h1>Banc d’essai Jev</h1>
-        <p>Classification par questions typées, via Vercel AI Gateway (typesafe-ai/jev)</p>
+        <p>Classification par questions typées, via l’API TypeSafe (jev-latest)</p>
       </header>
 
       <main className="grid">

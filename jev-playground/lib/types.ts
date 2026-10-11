@@ -42,7 +42,7 @@ export type EvaluateResponse = {
   latencyMs: number;
 };
 
-/** Tarif Jev via AI Gateway : 0,042 $ / 1M tokens d'entrée, sortie gratuite. */
+/** Tarif Jev (affiché sur AI Gateway, à confirmer en direct chez TypeSafe) : 0,042 $ / 1M tokens d'entrée, sortie gratuite. */
 export const PRICE_PER_MILLION_INPUT = 0.042;
 
 /** Validation légère, partagée client/serveur. Renvoie un message d'erreur ou null. */

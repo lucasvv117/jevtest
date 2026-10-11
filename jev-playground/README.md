@@ -1,12 +1,12 @@
 # Banc d’essai Jev
 
-Petite app Next.js pour tester **Jev** (TypeSafe AI, `typesafe-ai/jev`) via Vercel AI Gateway sur des cas de classification.
+Petite app Next.js pour tester **Jev** (TypeSafe AI, `jev-latest`) en appelant directement l’API TypeSafe sur des cas de classification.
 
 - **Un texte** : on colle un texte, Jev répond à chaque question (choice / score / boolean) avec la distribution de probabilités et la confiance.
 - **Un lot** : on colle jusqu’à 300 lignes depuis un tableur (`texte` + `libellé attendu`), on obtient précision, taux de classement auto selon un seuil, latence p50/p95, coût, et un export CSV.
 - Les cas d’usage sont dans `lib/use-cases.ts` (2 exemples fournis). Les questions sont aussi éditables à la volée dans l’interface.
 
-Les appels partent avec Zero Data Retention + No Training activés.
+Les appels partent directement vers `https://api.typesafe.ai/v1` avec votre clé TypeSafe (pas de passage par Vercel AI Gateway).
 
 ## Déployer
 
@@ -19,8 +19,7 @@ gh repo create jev-playground --private --source=. --push
 ```
 
 2. Sur vercel.com : **Add New → Project → Import** le repo. Aucun réglage de build à changer.
-3. **Settings → Environment Variables** : ajouter `APP_PASSWORD` (sinon l’URL est publique et consomme vos crédits), puis redéployer.
-4. AI Gateway doit être disponible sur le compte (onglet **AI Gateway** du dashboard). Sur Vercel, l’authentification passe par le token OIDC automatique : pas de clé à configurer.
+3. **Settings → Environment Variables** : ajouter `TYPESAFE_AI_API_KEY` (créée sur [console.typesafe.ai/keys](https://console.typesafe.ai/keys)) et `APP_PASSWORD` (sinon l’URL est publique et consomme vos crédits), puis redéployer.
 
 À l’ouverture, le navigateur demande un identifiant (n’importe lequel) et le mot de passe `APP_PASSWORD`.
 
@@ -28,11 +27,9 @@ gh repo create jev-playground --private --source=. --push
 
 ```bash
 npm install
-cp .env.example .env.local   # renseigner AI_GATEWAY_API_KEY (dashboard Vercel → AI Gateway → API Keys)
-npm run dev                  # http://localhost:3000
+echo "TYPESAFE_AI_API_KEY=..." > .env.local   # clé depuis console.typesafe.ai/keys
+npm run dev                                  # http://localhost:3000
 ```
-
-Alternative : `vercel link && vercel env pull` (token OIDC valable 12 h).
 
 ## Ajouter un cas d’usage
 
@@ -48,4 +45,4 @@ Bonnes pratiques Vercel : questions atomiques, options décrites plutôt que jus
 
 ## Stack
 
-Next.js 16 (App Router), AI SDK 7 (`experimental_evaluate`), aucune base de données. Tarif Jev : 0,042 $ / 1M tokens d’entrée, sortie gratuite.
+Next.js 16 (App Router), AI SDK 7 (`experimental_decide` + `@ai-sdk/typesafe-ai`), aucune base de données. Tarif Jev : 0,042 $ / 1M tokens d’entrée, sortie gratuite.

@@ -1,9 +1,11 @@
-import { experimental_evaluate as evaluate, type Experimental_EvaluationQuestion } from 'ai';
+import { typeSafeAi } from '@ai-sdk/typesafe-ai';
+import { experimental_decide as decide, type Experimental_DecisionQuestion } from 'ai';
 import { validateQuestions, type EvaluateResponse } from '@/lib/types';
 
 export const maxDuration = 30;
 
-const MODEL = process.env.JEV_MODEL ?? 'typesafe-ai/jev';
+// Appel direct à l'API TypeSafe (clé TYPESAFE_AI_API_KEY, console.typesafe.ai/keys).
+const MODEL = process.env.JEV_MODEL ?? 'jev-latest';
 // ~32k tokens max pour le state côté Jev : on coupe large côté caractères.
 const MAX_STATE_CHARS = 100_000;
 
@@ -28,17 +30,20 @@ export async function POST(request: Request) {
   const invalid = validateQuestions(questions);
   if (invalid) return Response.json({ error: invalid }, { status: 400 });
 
+  if (!process.env.TYPESAFE_AI_API_KEY) {
+    return Response.json(
+      { error: 'TYPESAFE_AI_API_KEY manquante : ajoutez-la dans les variables d’environnement.' },
+      { status: 500 },
+    );
+  }
+
   const started = performance.now();
   try {
-    const result = await evaluate({
-      model: MODEL,
+    const result = await decide({
+      model: typeSafeAi.decisionModel(MODEL),
       state,
-      questions: questions as Record<string, Experimental_EvaluationQuestion>,
+      questions: questions as Record<string, Experimental_DecisionQuestion>,
       maxRetries: 1,
-      providerOptions: {
-        // Données juridiques : pas de rétention ni d'entraînement côté fournisseur.
-        gateway: { zeroDataRetention: true, disallowPromptTraining: true },
-      },
     });
 
     const confidence =
@@ -55,10 +60,12 @@ export async function POST(request: Request) {
     return Response.json(payload);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[jev] evaluate failed:', message);
+    console.error('[jev] decide failed:', message);
     const hint = /401|403|authenticat|unauthori|forbidden/i.test(message)
-      ? ' Vérifiez que AI Gateway est activé sur le projet Vercel (ou que AI_GATEWAY_API_KEY est défini en local).'
-      : '';
+      ? ' Vérifiez TYPESAFE_AI_API_KEY (console.typesafe.ai/keys).'
+      : /402|credit|balance|payment/i.test(message)
+        ? ' Vérifiez les crédits du compte TypeSafe.'
+        : '';
     return Response.json({ error: `Échec de l’appel à Jev : ${message}.${hint}` }, { status: 502 });
   }
 }
