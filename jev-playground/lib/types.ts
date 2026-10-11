@@ -48,33 +48,33 @@ export const PRICE_PER_MILLION_INPUT = 0.042;
 /** Validation légère, partagée client/serveur. Renvoie un message d'erreur ou null. */
 export function validateQuestions(q: unknown): string | null {
   if (!q || typeof q !== 'object' || Array.isArray(q)) {
-    return 'Les questions doivent être un objet JSON { identifiant: question }.';
+    return 'Questions must be a JSON object { name: question }.';
   }
   const entries = Object.entries(q as Record<string, unknown>);
-  if (entries.length === 0) return 'Ajoutez au moins une question.';
+  if (entries.length === 0) return 'Add at least one question.';
   for (const [id, raw] of entries) {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(id)) {
-      return `Identifiant « ${id} » invalide : lettres, chiffres et _ uniquement.`;
+      return `Invalid name “${id}”: letters, numbers and _ only (cannot start with a number).`;
     }
     const v = raw as Partial<Question>;
-    if (!v || typeof v !== 'object') return `« ${id} » doit être un objet.`;
+    if (!v || typeof v !== 'object') return `“${id}” must be an object.`;
     if (typeof v.instructions !== 'string' || !v.instructions.trim()) {
-      return `« ${id} » : le champ instructions est vide.`;
+      return `“${id}”: the question asked to Jev is empty.`;
     }
     if (v.type === 'choice') {
       const c = (v as ChoiceQuestion).criteria;
       if (!c || typeof c !== 'object' || Array.isArray(c)) {
-        return `« ${id} » : criteria doit être un objet { option: description }.`;
+        return `“${id}”: criteria must be an object { option: description }.`;
       }
       const n = Object.keys(c).length;
-      if (n < 2 || n > 255) return `« ${id} » : prévoyez entre 2 et 255 options.`;
+      if (n < 2 || n > 255) return `“${id}”: use between 2 and 255 options.`;
     } else if (v.type === 'score') {
       const c = (v as ScoreQuestion).criteria;
       if (!Array.isArray(c) || c.length < 2 || c.length > 10) {
-        return `« ${id} » : criteria doit être une liste de 2 à 10 niveaux.`;
+        return `“${id}”: use between 2 and 10 levels.`;
       }
     } else if (v.type !== 'boolean') {
-      return `« ${id} » : type doit valoir choice, score ou boolean.`;
+      return `“${id}”: type must be choice, score or boolean.`;
     }
   }
   return null;

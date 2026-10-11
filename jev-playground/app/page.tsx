@@ -3,47 +3,115 @@
 import { useMemo, useRef, useState } from 'react';
 import { USE_CASES } from '@/lib/use-cases';
 import { validateQuestions, type Questions } from '@/lib/types';
+import { draftError, fromDrafts, toDrafts } from '@/lib/question-draft';
 import { SingleTest } from '@/components/SingleTest';
 import { BatchTest } from '@/components/BatchTest';
+import { QuestionsEditor } from '@/components/QuestionsEditor';
+import { Toasts, useToasts } from '@/components/Toasts';
 
 const pretty = (q: Questions) => JSON.stringify(q, null, 2);
 
 export default function Page() {
   const [caseId, setCaseId] = useState(USE_CASES[0].id);
   const useCase = USE_CASES.find((u) => u.id === caseId) ?? USE_CASES[0];
-  const [draft, setDraft] = useState(pretty(useCase.questions));
+  const [drafts, setDrafts] = useState(() => toDrafts(useCase.questions));
+  const [view, setView] = useState<'visual' | 'json'>('visual');
+  const [jsonText, setJsonText] = useState('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
   const [mode, setMode] = useState<'single' | 'batch'>('single');
   const editorDialog = useRef<HTMLDialogElement>(null);
+  const { toasts, show, dismiss } = useToasts();
 
   const { questions, error } = useMemo(() => {
-    try {
-      const parsed = JSON.parse(draft);
-      const err = validateQuestions(parsed);
-      return { questions: (err ? {} : parsed) as Questions, error: err };
-    } catch (e) {
-      return { questions: {} as Questions, error: `JSON invalide : ${(e as Error).message}` };
-    }
-  }, [draft]);
+    const built = fromDrafts(drafts);
+    const err = draftError(drafts) ?? validateQuestions(built);
+    return { questions: err ? ({} as Questions) : built, error: err };
+  }, [drafts]);
 
-  const edited = draft !== pretty(useCase.questions);
+  const edited = pretty(fromDrafts(drafts)) !== pretty(useCase.questions);
+
+  function load(q: Questions) {
+    setDrafts(toDrafts(q));
+    setJsonText(pretty(q));
+    setJsonError(null);
+  }
 
   function selectCase(id: string) {
     const next = USE_CASES.find((u) => u.id === id)!;
     setCaseId(id);
-    setDraft(pretty(next.questions));
+    load(next.questions);
   }
+
+  function switchView(next: 'visual' | 'json') {
+    if (next === 'json') {
+      setJsonText(pretty(fromDrafts(drafts)));
+      setJsonError(null);
+    }
+    setView(next);
+  }
+
+  function editJson(text: string) {
+    setJsonText(text);
+    try {
+      const parsed = JSON.parse(text);
+      const err = validateQuestions(parsed);
+      setJsonError(err);
+      if (!err) setDrafts(toDrafts(parsed));
+    } catch (e) {
+      setJsonError(`Invalid JSON: ${(e as Error).message}`);
+    }
+  }
+
+  const shownError = view === 'json' ? jsonError : error;
+  const editor = (
+    <>
+      <div className="seg seg-small" role="tablist" aria-label="Editor view">
+        {(['visual', 'json'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            className={view === v ? 'seg-btn is-on' : 'seg-btn'}
+            onClick={() => switchView(v)}
+          >
+            {v === 'visual' ? 'Visual' : 'JSON'}
+          </button>
+        ))}
+      </div>
+      {view === 'visual' ? (
+        <QuestionsEditor drafts={drafts} onChange={setDrafts} />
+      ) : (
+        <textarea
+          className="code"
+          spellCheck={false}
+          value={jsonText}
+          onChange={(e) => editJson(e.target.value)}
+          aria-invalid={!!jsonError}
+          aria-label="Questions as JSON"
+        />
+      )}
+      {shownError && (
+        <p className="error" role="alert">
+          {shownError}
+        </p>
+      )}
+    </>
+  );
+
+  const count = Object.keys(questions).length;
 
   return (
     <div className="shell">
       <header className="topbar">
-        <h1>Banc d’essai Jev</h1>
-        <p>Classification par questions typées, via l’API TypeSafe (jev-latest)</p>
+        <h1>Jev Test Bench</h1>
+        <p>Classification with typed questions, via the TypeSafe API (jev-latest)</p>
       </header>
 
       <main className="grid">
         <aside className="config">
           <label className="field">
-            <span className="field-label">Cas d’usage</span>
+            <span className="field-label">Use case</span>
             <select value={caseId} onChange={(e) => selectCase(e.target.value)}>
               {USE_CASES.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -54,38 +122,38 @@ export default function Page() {
             <span className="field-hint">{useCase.description}</span>
           </label>
 
-          <label className="field grow">
+          <div className="field">
             <span className="field-label">
-              Questions posées à Jev
+              Questions for Jev
               <span className="field-actions">
                 {edited && (
-                  <button type="button" className="link" onClick={() => setDraft(pretty(useCase.questions))}>
-                    Rétablir
+                  <button type="button" className="link" onClick={() => load(useCase.questions)}>
+                    Reset
                   </button>
                 )}
                 <button type="button" className="link" onClick={() => editorDialog.current?.showModal()}>
-                  Agrandir
+                  Expand
                 </button>
               </span>
             </span>
-            <span className="field-hint">
-              Modifiable ici pour itérer. Pour l’enregistrer, reportez-le dans lib/use-cases.ts.
-            </span>
-            <textarea
-              className="code"
-              spellCheck={false}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              aria-invalid={!!error}
-            />
-          </label>
-          {error ? (
-            <p className="error" role="alert">{error}</p>
-          ) : (
+            <details className="explainer">
+              <summary>How does Jev work?</summary>
+              <p>
+                Jev doesn’t write free text. For each question below, it reads your text and returns a{' '}
+                <strong>probability for every possible answer</strong>, plus a <strong>confidence</strong> score
+                (how concentrated those probabilities are: 0 = hesitant, 1 = certain).
+              </p>
+              <p>
+                Clear questions and well-described options give sharper, more reliable answers. Changes apply
+                immediately to your tests; to keep them, copy the JSON into lib/use-cases.ts.
+              </p>
+            </details>
+            {editor}
+          </div>
+          {!error && (
             <p className="muted small">
-              {Object.keys(questions).length} question{Object.keys(questions).length > 1 ? 's' : ''} valide
-              {Object.keys(questions).length > 1 ? 's' : ''}
-              {edited ? ', modifiées' : ''}
+              {count} valid question{count > 1 ? 's' : ''}
+              {edited ? ', edited' : ''}
             </p>
           )}
         </aside>
@@ -97,20 +165,12 @@ export default function Page() {
         >
           <div className="editor-dialog-body">
             <div className="editor-dialog-head">
-              <span className="field-label">Questions posées à Jev</span>
+              <span className="field-label">Questions for Jev</span>
               <button type="button" onClick={() => editorDialog.current?.close()}>
-                Fermer
+                Close
               </button>
             </div>
-            <textarea
-              className="code"
-              spellCheck={false}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              aria-invalid={!!error}
-              aria-label="Questions posées à Jev"
-            />
-            {error && <p className="error" role="alert">{error}</p>}
+            <div className="editor-dialog-scroll">{editor}</div>
           </div>
         </dialog>
 
@@ -122,7 +182,7 @@ export default function Page() {
               className={mode === 'single' ? 'tab is-active' : 'tab'}
               onClick={() => setMode('single')}
             >
-              Un texte
+              Single text
             </button>
             <button
               role="tab"
@@ -130,7 +190,7 @@ export default function Page() {
               className={mode === 'batch' ? 'tab is-active' : 'tab'}
               onClick={() => setMode('batch')}
             >
-              Un lot
+              Batch
             </button>
           </div>
 
@@ -139,17 +199,21 @@ export default function Page() {
               key={caseId}
               questions={questions}
               examples={useCase.examples}
-              disabledReason={error ? 'Corrigez les questions avant d’évaluer.' : null}
+              disabledReason={error ? 'Fix the questions before running.' : null}
+              onSuccess={show}
             />
           ) : (
             <BatchTest
               key={caseId}
               questions={questions}
-              disabledReason={error ? 'Corrigez les questions avant d’évaluer.' : null}
+              disabledReason={error ? 'Fix the questions before running.' : null}
+              onSuccess={show}
             />
           )}
         </section>
       </main>
+
+      <Toasts toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }

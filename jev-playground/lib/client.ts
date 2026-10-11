@@ -7,8 +7,8 @@ export async function callJev(state: string, questions: Questions, signal?: Abor
     body: JSON.stringify({ state, questions }),
     signal,
   });
-  const data = await res.json().catch(() => ({ error: `Réponse illisible (HTTP ${res.status}).` }));
-  if (!res.ok) throw new Error(data.error ?? `Erreur HTTP ${res.status}.`);
+  const data = await res.json().catch(() => ({ error: `Unreadable response (HTTP ${res.status}).` }));
+  if (!res.ok) throw new Error(data.error ?? `HTTP error ${res.status}.`);
   return data as EvaluateResponse;
 }
 

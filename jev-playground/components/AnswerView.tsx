@@ -2,7 +2,7 @@
 
 import type { Answer, Question } from '@/lib/types';
 
-const pct = (p: number) => `${Math.round(p * 100)} %`;
+const pct = (p: number) => `${Math.round(p * 100)}%`;
 
 function Bars({
   rows,
@@ -57,14 +57,14 @@ export function AnswerView({
     const n = Math.max(levels.length, Object.keys(probs).length);
     const rows = Array.from({ length: n }, (_, i) => ({
       key: String(i),
-      label: levels[i] ?? `Niveau ${i}`,
+      label: levels[i] ?? `Level ${i}`,
       p: probs[String(i)] ?? 0,
     }));
     const top = rows.reduce((a, b) => (b.p > a.p ? b : a), rows[0]);
     headline = `${answer.score.toFixed(2)} / ${n - 1}`;
     body = (
       <>
-        <div className="scale" aria-label={`Score ${answer.score.toFixed(2)} sur ${n - 1}`}>
+        <div className="scale" aria-label={`Score ${answer.score.toFixed(2)} out of ${n - 1}`}>
           <span className="scale-marker" style={{ left: `${(answer.score / Math.max(n - 1, 1)) * 100}%` }} />
         </div>
         <Bars rows={rows} selected={top?.key} />
@@ -72,16 +72,16 @@ export function AnswerView({
     );
   } else {
     const p = answer.probability;
-    headline = p >= 0.5 ? `Oui, ${pct(p)}` : `Non, ${pct(1 - p)}`;
+    headline = p >= 0.5 ? `Yes, ${pct(p)}` : `No, ${pct(1 - p)}`;
     body = (
       <div className="boolean">
-        <span className="bool-side">Non</span>
+        <span className="bool-side">No</span>
         <span className="bar-track">
           <span className="bar-fill" style={{ width: `${p * 100}%` }} />
           <span className="bool-mid" aria-hidden />
         </span>
-        <span className="bool-side">Oui</span>
-        <span className="bar-value">P(vrai) = {p.toFixed(2)}</span>
+        <span className="bool-side">Yes</span>
+        <span className="bar-value">P(yes) = {p.toFixed(2)}</span>
       </div>
     );
   }
@@ -96,8 +96,8 @@ export function AnswerView({
         <div className="answer-result">
           <span className="answer-headline">{headline}</span>
           {typeof confidence === 'number' && (
-            <span className="answer-conf" title="Concentration de la distribution (0 = étalée, 1 = certaine)">
-              confiance {confidence.toFixed(2)}
+            <span className="answer-conf" title="How concentrated the distribution is (0 = spread out, 1 = certain)">
+              confidence {confidence.toFixed(2)}
             </span>
           )}
         </div>

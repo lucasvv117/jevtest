@@ -18,7 +18,7 @@ export function proxy(request: NextRequest) {
     if (supplied === password) return NextResponse.next();
   }
 
-  return new NextResponse('Authentification requise.', {
+  return new NextResponse('Authentication required.', {
     status: 401,
     headers: { 'WWW-Authenticate': 'Basic realm="Jev playground", charset="UTF-8"' },
   });

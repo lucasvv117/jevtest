@@ -14,16 +14,16 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Corps de requête JSON invalide.' }, { status: 400 });
+    return Response.json({ error: 'Invalid JSON request body.' }, { status: 400 });
   }
 
   const { state, questions } = body;
   if (typeof state !== 'string' || !state.trim()) {
-    return Response.json({ error: 'Le texte à évaluer est vide.' }, { status: 400 });
+    return Response.json({ error: 'The text to classify is empty.' }, { status: 400 });
   }
   if (state.length > MAX_STATE_CHARS) {
     return Response.json(
-      { error: `Texte trop long (${state.length} caractères, max ${MAX_STATE_CHARS}).` },
+      { error: `Text too long (${state.length} characters, max ${MAX_STATE_CHARS}).` },
       { status: 400 },
     );
   }
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
   if (!process.env.TYPESAFE_AI_API_KEY) {
     return Response.json(
-      { error: 'TYPESAFE_AI_API_KEY manquante : ajoutez-la dans les variables d’environnement.' },
+      { error: 'TYPESAFE_AI_API_KEY is missing: add it to the environment variables.' },
       { status: 500 },
     );
   }
@@ -62,10 +62,10 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[jev] decide failed:', message);
     const hint = /401|403|authenticat|unauthori|forbidden/i.test(message)
-      ? ' Vérifiez TYPESAFE_AI_API_KEY (console.typesafe.ai/keys).'
+      ? ' Check TYPESAFE_AI_API_KEY (console.typesafe.ai/keys).'
       : /402|credit|balance|payment/i.test(message)
-        ? ' Vérifiez les crédits du compte TypeSafe.'
+        ? ' Check your TypeSafe account credits.'
         : '';
-    return Response.json({ error: `Échec de l’appel à Jev : ${message}.${hint}` }, { status: 502 });
+    return Response.json({ error: `Jev call failed: ${message}.${hint}` }, { status: 502 });
   }
 }
