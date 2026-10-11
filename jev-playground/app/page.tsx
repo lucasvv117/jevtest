@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { USE_CASES } from '@/lib/use-cases';
 import { validateQuestions, type Questions } from '@/lib/types';
 import { SingleTest } from '@/components/SingleTest';
@@ -13,6 +13,7 @@ export default function Page() {
   const useCase = USE_CASES.find((u) => u.id === caseId) ?? USE_CASES[0];
   const [draft, setDraft] = useState(pretty(useCase.questions));
   const [mode, setMode] = useState<'single' | 'batch'>('single');
+  const editorDialog = useRef<HTMLDialogElement>(null);
 
   const { questions, error } = useMemo(() => {
     try {
@@ -56,11 +57,16 @@ export default function Page() {
           <label className="field grow">
             <span className="field-label">
               Questions posées à Jev
-              {edited && (
-                <button type="button" className="link" onClick={() => setDraft(pretty(useCase.questions))}>
-                  Rétablir
+              <span className="field-actions">
+                {edited && (
+                  <button type="button" className="link" onClick={() => setDraft(pretty(useCase.questions))}>
+                    Rétablir
+                  </button>
+                )}
+                <button type="button" className="link" onClick={() => editorDialog.current?.showModal()}>
+                  Agrandir
                 </button>
-              )}
+              </span>
             </span>
             <span className="field-hint">
               Modifiable ici pour itérer. Pour l’enregistrer, reportez-le dans lib/use-cases.ts.
@@ -83,6 +89,30 @@ export default function Page() {
             </p>
           )}
         </aside>
+
+        <dialog
+          ref={editorDialog}
+          className="editor-dialog"
+          onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
+        >
+          <div className="editor-dialog-body">
+            <div className="editor-dialog-head">
+              <span className="field-label">Questions posées à Jev</span>
+              <button type="button" onClick={() => editorDialog.current?.close()}>
+                Fermer
+              </button>
+            </div>
+            <textarea
+              className="code"
+              spellCheck={false}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              aria-invalid={!!error}
+              aria-label="Questions posées à Jev"
+            />
+            {error && <p className="error" role="alert">{error}</p>}
+          </div>
+        </dialog>
 
         <section className="workspace">
           <div className="tabs" role="tablist">

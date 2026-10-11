@@ -81,6 +81,17 @@ textarea.code {
   min-height: 420px; tab-size: 2; white-space: pre; overflow: auto;
 }
 textarea[aria-invalid='true'] { border-color: var(--bad); }
+.field-actions { display: flex; gap: 12px; }
+
+/* Éditeur de questions en grand (Échap ou clic hors du cadre pour fermer) */
+.editor-dialog {
+  width: min(1100px, calc(100vw - 32px)); height: calc(100vh - 64px); max-height: none; max-width: none;
+  padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: inherit;
+}
+.editor-dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+.editor-dialog-body { display: flex; flex-direction: column; gap: 12px; height: 100%; padding: 18px; }
+.editor-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.editor-dialog textarea.code { flex: 1; min-height: 0; resize: none; font-size: 13.5px; }
 
 button {
   border: 1px solid var(--line); background: var(--surface); border-radius: 6px;
