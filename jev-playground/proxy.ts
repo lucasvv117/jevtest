@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  * Protection par mot de passe (HTTP Basic Auth).
  * Active uniquement si APP_PASSWORD est défini dans les variables d'env Vercel.
  * Identifiant : n'importe lequel. Mot de passe : APP_PASSWORD.
- * Sans ça, n'importe qui avec l'URL pourrait consommer vos crédits AI Gateway.
+ * Sans ça, n'importe qui avec l'URL pourrait consommer vos crédits TypeSafe.
  */
 export function proxy(request: NextRequest) {
   const password = process.env.APP_PASSWORD;
