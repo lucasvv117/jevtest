@@ -4,7 +4,7 @@ Petite app Next.js pour tester **Jev** (TypeSafe AI, `jev-latest`) en appelant d
 
 - **Un texte** : on colle un texte, Jev répond à chaque question (choice / score / boolean) avec la distribution de probabilités et la confiance.
 - **Un lot** : on colle jusqu’à 300 lignes depuis un tableur (`texte` + `libellé attendu`), on obtient précision, taux de classement auto selon un seuil, latence p50/p95, coût, et un export CSV.
-- Les cas d’usage sont dans `lib/use-cases.ts` (3 fournis, dont « Agent tool calling » qui affiche le schéma du FRA Agent avec, pour chaque tool, le verdict de Jev en vert/rouge). Les questions sont éditables dans l’interface via un éditeur visuel (ajout/suppression de questions, d’options, de niveaux, avec explication de chaque type) ou en JSON. L’interface est en anglais.
+- Les cas d’usage sont dans `lib/use-cases.ts` (4 fournis, dont « Court decision relevance » qui évalue la pertinence de décisions de justice en PDF par rapport à une question, et « Agent tool calling » qui affiche le schéma du FRA Agent avec, pour chaque tool, le verdict de Jev en vert/rouge). Les questions sont éditables dans l’interface via un éditeur visuel (ajout/suppression de questions, d’options, de niveaux, avec explication de chaque type) ou en JSON. L’interface est en anglais.
 
 Les appels partent directement vers `https://api.typesafe.ai/v1` avec votre clé TypeSafe (pas de passage par Vercel AI Gateway).
 

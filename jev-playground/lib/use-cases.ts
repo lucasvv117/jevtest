@@ -117,4 +117,45 @@ export const USE_CASES: UseCase[] = [
       'Retrouve dans notre SharePoint les échanges avec Axa France sur le sinistre de l’entrepôt, puis donne-moi les informations clés sur la société Axa France : dirigeants, capital et litiges en cours.',
     ],
   },
+  {
+    id: 'decision-relevance',
+    name: 'Court decision relevance',
+    description: 'Upload court decisions (PDF) and a user question: Jev rates how relevant each decision is to the question.',
+    view: 'decision-relevance',
+    questions: {
+      relevance: {
+        type: 'score',
+        instructions:
+          'The text contains a user question followed by a court decision. How relevant is this decision for answering the user question?',
+        criteria: [
+          'Not relevant: the decision deals with another legal issue or another area of law.',
+          'Marginally relevant: same area of law, but the decision does not help answer the question.',
+          'Relevant: the decision addresses the legal issue raised by the question and can support the answer.',
+          'Highly relevant: the decision directly rules on the exact question asked, it is a key source for the answer.',
+        ],
+      },
+      sameLegalIssue: {
+        type: 'boolean',
+        instructions: 'Does the court decision rule on the same legal issue as the one raised by the user question?',
+        criteria: {
+          true: 'The court decides the legal point the user asks about (same rule, same condition or same qualification).',
+          false: 'The legal point decided by the court is different, or only mentioned in passing.',
+        },
+      },
+      similarFacts: {
+        type: 'boolean',
+        instructions: 'Are the facts of the case comparable to the situation described in the user question?',
+        criteria: {
+          true: 'The factual situation is close to the one in the question (same type of parties, contract, event or dispute).',
+          false: 'The facts are different, or the question describes no concrete situation.',
+        },
+      },
+    },
+    examples: [
+      'Un salarié peut-il être licencié pour faute grave en raison de propos tenus sur les réseaux sociaux ?',
+      'Quelles sont les conditions de la rupture brutale d’une relation commerciale établie ?',
+      'Le bailleur peut-il refuser le renouvellement d’un bail commercial sans indemnité d’éviction ?',
+      'Quelle est la responsabilité d’un constructeur pour des désordres apparus après la réception des travaux ?',
+    ],
+  },
 ];
