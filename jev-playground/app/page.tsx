@@ -201,6 +201,7 @@ export default function Page() {
               examples={useCase.examples}
               disabledReason={error ? 'Fix the questions before running.' : null}
               onSuccess={show}
+              view={useCase.view}
             />
           ) : (
             <BatchTest
