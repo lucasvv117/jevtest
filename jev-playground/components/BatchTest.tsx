@@ -2,7 +2,8 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { callJev, runPool } from '@/lib/client';
-import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions } from '@/lib/types';
+import { callFraAgent } from '@/lib/fra-agent';
+import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions, type UseCase } from '@/lib/types';
 import type { ShowToast } from './Toasts';
 
 const MAX_ROWS = 300;
@@ -33,10 +34,12 @@ export function BatchTest({
   questions,
   disabledReason,
   onSuccess,
+  view,
 }: {
   questions: Questions;
   disabledReason: string | null;
   onSuccess: ShowToast;
+  view?: UseCase['view'];
 }) {
   const choiceIds = Object.keys(questions).filter((k) => questions[k].type === 'choice');
   const [input, setInput] = useState('');
@@ -72,7 +75,11 @@ export function BatchTest({
       CONCURRENCY,
       async (row, i) => {
         try {
-          const res = await callJev(row.text, questions, signal);
+          // Agent view: researcher tools are only evaluated when `research` is called (default 0.5 threshold).
+          const res =
+            view === 'fra-agent'
+              ? await callFraAgent(row.text, questions, 0.5, signal)
+              : await callJev(row.text, questions, signal);
           setRows((prev) => prev.map((r, j) => (j === i ? { ...r, res } : r)));
           succeeded++;
         } catch (e) {

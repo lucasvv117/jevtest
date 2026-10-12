@@ -1,5 +1,6 @@
 'use client';
 
+import { FRA_RESEARCHER_TOOLS, verdictFor, type Verdict } from '@/lib/fra-agent';
 import type { Answer, Questions } from '@/lib/types';
 
 /**
@@ -96,24 +97,6 @@ const BUNDLE_W = 124;
 const BUNDLE_H = 42;
 const BUNDLE_Y = 116;
 
-export type Verdict = { used: boolean; label: string };
-
-/** Yes/No: used if P(yes) ≥ 0.5. Score: used if score / (levels − 1) ≥ threshold. */
-export function verdictFor(questions: Questions, answer: Answer | undefined, tool: string, threshold: number): Verdict | null {
-  if (!answer) return null;
-  if (answer.type === 'boolean') {
-    const p = answer.probability;
-    return { used: p >= 0.5, label: p >= 0.5 ? `Yes ${Math.round(p * 100)}%` : `No ${Math.round((1 - p) * 100)}%` };
-  }
-  if (answer.type === 'score') {
-    const q = questions[tool];
-    const levels = q?.type === 'score' ? q.criteria.length : Object.keys(answer.probabilities ?? {}).length;
-    const norm = answer.score / Math.max(levels - 1, 1);
-    return { used: norm >= threshold, label: norm.toFixed(2) };
-  }
-  return null;
-}
-
 /** Verdict pill anchored on the box's top-right corner, so the original layout stays untouched. */
 function Badge({ x, y, w, label, color }: { x: number; y: number; w: number; label: string; color: string }) {
   const bw = Math.max(30, label.length * 5.4 + 10);
@@ -138,9 +121,15 @@ export function FraAgentDiagram({
   threshold: number;
   onThresholdChange: (t: number) => void;
 }) {
-  const verdicts = Object.fromEntries(
+  const verdicts: Record<string, Verdict | null> = Object.fromEntries(
     [...FRA_BUNDLE_IDS, ...FRA_TOOL_NAMES].map((id) => [id, verdictFor(questions, answers?.[id], id, threshold)]),
   );
+  // Researcher tools are only reachable through `research`: if Jev says it isn't called, they're skipped.
+  const research = verdicts.research;
+  if (research && !research.used) {
+    for (const t of FRA_RESEARCHER_TOOLS) verdicts[t] = { used: false, label: 'Skipped' };
+  }
+  const researcherColor = research ? (research.used ? GREEN : RED) : null;
   const count = (ids: string[]) => {
     const judged = ids.map((id) => verdicts[id]).filter(Boolean) as Verdict[];
     return { used: judged.filter((v) => v.used).length, total: judged.length };
@@ -267,13 +256,25 @@ export function FraAgentDiagram({
           </text>
 
           {/* researcher sub-agent */}
-          <rect x="355" y="300" width="230" height="46" rx="8" fill="#3b076433" stroke="#7c3aed" strokeWidth="1.5" />
+          <rect
+            x="355"
+            y="300"
+            width="230"
+            height="46"
+            rx="8"
+            fill="#3b076433"
+            stroke={researcherColor ?? '#7c3aed'}
+            strokeWidth={researcherColor ? 2 : 1.5}
+          />
           <text x="470" y="319" textAnchor="middle" fill="#a78bfa" fontSize="12.5" fontWeight="600">
             FRA Researcher
           </text>
           <text x="470" y="336" textAnchor="middle" fill="#6b7280" fontSize="9">
             gemini-3.5-flash-lite (high) · fallback gpt-5.6-luna
           </text>
+          {research && researcherColor && (
+            <Badge x={355} y={300} w={230} label={research.used ? 'Called' : 'Not called'} color={researcherColor} />
+          )}
           <text x="20" y="478" fill="#6b7280" fontSize="8.5" fontStyle="italic">
             RestrictedToolsMiddleware narrows this set per active filter (enterprise · fiscal doctrine ·
             jurisdiction/code); the default scope excludes the two enterprise tools

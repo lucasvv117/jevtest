@@ -209,6 +209,7 @@ export default function Page() {
               questions={questions}
               disabledReason={error ? 'Fix the questions before running.' : null}
               onSuccess={show}
+              view={useCase.view}
             />
           )}
         </section>
