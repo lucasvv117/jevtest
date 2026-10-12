@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AnswerView } from './AnswerView';
 import { FraAgentDiagram } from './FraAgentDiagram';
 import { callJev } from '@/lib/client';
+import { callFraAgent, type FraAgentResponse } from '@/lib/fra-agent';
 import { PRICE_PER_MILLION_INPUT, type EvaluateResponse, type Questions, type UseCase } from '@/lib/types';
 import type { ShowToast } from './Toasts';
 
@@ -23,7 +24,7 @@ export function SingleTest({
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<EvaluateResponse | null>(null);
+  const [result, setResult] = useState<(EvaluateResponse & Partial<FraAgentResponse>) | null>(null);
   const [threshold, setThreshold] = useState(0.5);
   const isAgent = view === 'fra-agent';
 
@@ -31,12 +32,23 @@ export function SingleTest({
     setLoading(true);
     setError(null);
     try {
-      const res = await callJev(text, questions);
-      setResult(res);
-      onSuccess(
-        'TypeSafe API call succeeded',
-        `${Object.keys(res.answers).length} answers · ${res.latencyMs} ms · ${res.usage.inputTokens ?? '?'} input tokens`,
-      );
+      if (isAgent) {
+        const res = await callFraAgent(text, questions, threshold);
+        setResult(res);
+        onSuccess(
+          res.calls.researcher === null ? 'TypeSafe API call succeeded' : '2 TypeSafe API calls succeeded',
+          res.calls.researcher === null
+            ? `Main tools evaluated · research not called, researcher skipped · ${res.latencyMs} ms`
+            : `Main tools, then researcher tools · ${res.latencyMs} ms · ${res.usage.inputTokens ?? '?'} input tokens`,
+        );
+      } else {
+        const res = await callJev(text, questions);
+        setResult(res);
+        onSuccess(
+          'TypeSafe API call succeeded',
+          `${Object.keys(res.answers).length} answers · ${res.latencyMs} ms · ${res.usage.inputTokens ?? '?'} input tokens`,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setResult(null);
@@ -104,6 +116,10 @@ export function SingleTest({
       {result && (
         <div className="results" aria-live="polite">
           <p className="meta">
+            {result.calls &&
+              `Call 1 (manager): ${result.calls.main} ms · Call 2 (researcher): ${
+                result.calls.researcher === null ? 'skipped, research not called' : `${result.calls.researcher} ms`
+              } · `}
             {result.latencyMs} ms · {result.usage.inputTokens ?? '?'} input tokens ·{' '}
             {(((result.usage.inputTokens ?? 0) / 1e6) * PRICE_PER_MILLION_INPUT).toFixed(6)} $
           </p>

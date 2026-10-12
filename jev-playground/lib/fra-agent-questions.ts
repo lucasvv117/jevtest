@@ -1,4 +1,5 @@
 import { BUNDLE_GUIDES, ENTERPRISE_GUIDANCE, RESEARCHER_STRATEGY, TOOL_DOCSTRINGS } from './fra-agent-definitions';
+import { FRA_RESEARCHER_TOOLS } from './fra-agent';
 import type { Questions } from './types';
 
 /**
@@ -140,17 +141,6 @@ const TOOL_CRITERIA: Record<Tool, YesNo> = {
   },
 };
 
-const RESEARCHER_TOOLS: Tool[] = [
-  'search_legislation',
-  'search_decisions',
-  'lookup_legislation',
-  'lookup_decision',
-  'read_decision',
-  'search_tax_treatise',
-  'search_tax_commentary',
-  'search_enterprise_documents',
-  'search_enterprise_decisions',
-];
 const ENTERPRISE_TOOLS: Tool[] = ['search_enterprise_documents', 'search_enterprise_decisions'];
 
 const section = (title: string, body: string) => `## ${title}\n${body}`;
@@ -204,6 +194,6 @@ export function buildFraAgentQuestions(): Questions {
   for (const [bundle, b] of Object.entries(BUNDLES) as [Bundle, (typeof BUNDLES)[Bundle]][]) {
     for (const tool of b.tools) questions[tool] = managerToolQuestion(tool, bundle);
   }
-  for (const tool of RESEARCHER_TOOLS) questions[tool] = researcherToolQuestion(tool);
+  for (const tool of FRA_RESEARCHER_TOOLS) questions[tool] = researcherToolQuestion(tool);
   return questions;
 }
