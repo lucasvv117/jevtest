@@ -111,6 +111,10 @@ export const USE_CASES: UseCase[] = [
       'Rédige une clause de non-concurrence pour un commercial, conforme à la jurisprudence récente.',
       'Que dit l’article L1232-1 du code du travail ?',
       'Quels sont les litiges en cours impliquant la société Carrefour ?',
+      'Retrouve sur notre SharePoint la dernière version du contrat de prestation signé avec le client Lambert et dis-moi quand il arrive à échéance.',
+      'Rédige un contrat de prestation de services informatiques entre ma société et un client, avec des clauses de confidentialité, de responsabilité et de résiliation.',
+      'D’après les documents de notre base de connaissances, quelle est la procédure interne du cabinet pour l’ouverture d’un nouveau dossier client ?',
+      'Retrouve dans notre SharePoint les échanges avec Axa France sur le sinistre de l’entrepôt, puis donne-moi les informations clés sur la société Axa France : dirigeants, capital et litiges en cours.',
     ],
   },
 ];
