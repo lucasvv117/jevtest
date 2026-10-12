@@ -6,6 +6,7 @@ import { validateQuestions, type Questions } from '@/lib/types';
 import { draftError, fromDrafts, toDrafts } from '@/lib/question-draft';
 import { SingleTest } from '@/components/SingleTest';
 import { BatchTest } from '@/components/BatchTest';
+import { DecisionRelevance } from '@/components/DecisionRelevance';
 import { QuestionsEditor } from '@/components/QuestionsEditor';
 import { Toasts, useToasts } from '@/components/Toasts';
 
@@ -175,42 +176,54 @@ export default function Page() {
         </dialog>
 
         <section className="workspace">
-          <div className="tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={mode === 'single'}
-              className={mode === 'single' ? 'tab is-active' : 'tab'}
-              onClick={() => setMode('single')}
-            >
-              Single text
-            </button>
-            <button
-              role="tab"
-              aria-selected={mode === 'batch'}
-              className={mode === 'batch' ? 'tab is-active' : 'tab'}
-              onClick={() => setMode('batch')}
-            >
-              Batch
-            </button>
-          </div>
-
-          {mode === 'single' ? (
-            <SingleTest
+          {useCase.view === 'decision-relevance' ? (
+            <DecisionRelevance
               key={caseId}
               questions={questions}
               examples={useCase.examples}
               disabledReason={error ? 'Fix the questions before running.' : null}
               onSuccess={show}
-              view={useCase.view}
             />
           ) : (
-            <BatchTest
-              key={caseId}
-              questions={questions}
-              disabledReason={error ? 'Fix the questions before running.' : null}
-              onSuccess={show}
-              view={useCase.view}
-            />
+            <>
+              <div className="tabs" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={mode === 'single'}
+                  className={mode === 'single' ? 'tab is-active' : 'tab'}
+                  onClick={() => setMode('single')}
+                >
+                  Single text
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={mode === 'batch'}
+                  className={mode === 'batch' ? 'tab is-active' : 'tab'}
+                  onClick={() => setMode('batch')}
+                >
+                  Batch
+                </button>
+              </div>
+
+              {mode === 'single' ? (
+                <SingleTest
+                  key={caseId}
+                  questions={questions}
+                  examples={useCase.examples}
+                  disabledReason={error ? 'Fix the questions before running.' : null}
+                  onSuccess={show}
+                  view={useCase.view}
+                />
+              ) : (
+                <BatchTest
+                  key={caseId}
+                  questions={questions}
+                  disabledReason={error ? 'Fix the questions before running.' : null}
+                  onSuccess={show}
+                  view={useCase.view}
+                />
+              )}
+            </>
           )}
         </section>
       </main>

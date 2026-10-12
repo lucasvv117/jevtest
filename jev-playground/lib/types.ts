@@ -29,7 +29,7 @@ export type UseCase = {
   /** exemples de textes pour tester rapidement */
   examples: string[];
   /** rendu spécifique des résultats (sinon : une carte par question) */
-  view?: 'fra-agent';
+  view?: 'fra-agent' | 'decision-relevance';
 };
 
 export type ChoiceAnswer = { type: 'choice'; choice: string; probabilities?: Record<string, number> };
